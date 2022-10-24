@@ -1,5 +1,4 @@
 __pycache__
-nlp_transfer_learning/
 *.amltconfig
 amlt/
 amlt_configs/
