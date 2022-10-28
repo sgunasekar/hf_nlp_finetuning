@@ -1,4 +1,4 @@
-## Running this script generates the lib/hf_datasets_info.py file
+## Running this script generates the configs/hf_datasets_info.py file
 
 import json
 import os 
@@ -11,7 +11,7 @@ import evaluate
 
 sys.path.insert(0, "..") 
 
-## This scripts creates and updates the ../lib/hf_datasets_info.py file
+## This scripts creates and updates the ../configs/hf_datasets_info.py file
 ## Usages: 
 # `python build_datasets_info.py`
 # `python build_datasets_info.py task1 task2`
@@ -132,11 +132,11 @@ def get_task_info_dict(TaskInfo: datasets.DatasetInfo, task_key:str) -> dict:
 
 def dump_datasets_info(datasets_info, overwrite = True):
 
-    file_path = os.path.join("..", "lib", "hf_datasets_info.py") 
+    file_path = os.path.join("..", "configs", "hf_datasets_info.py") 
     if overwrite or not(os.path.exists(file_path)):
         logging.info(f"Creating/overwriting {file_path}")
     else: 
-        from lib.hf_datasets_info import datasets_info as old_datasets_info
+        from configs.hf_datasets_info import datasets_info as old_datasets_info
         datasets_info = {**old_datasets_info, **datasets_info}
         logging.info(f"Updating datasets_info in existing {file_path}")
 

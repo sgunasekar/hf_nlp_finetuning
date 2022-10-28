@@ -1,10 +1,17 @@
+from configs import hf_datasets_info
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from datasets import load_dataset, Dataset
 import logging
 from typing import Optional
+import yaml 
+import os
+from configs.constants import CUSTOM_FUNC_KWARGS_FILE
+ADDITIONAL_KWARGS = yaml.full_load(open(CUSTOM_FUNC_KWARGS_FILE,"r"))
 
 def get_dataset(task_info: dict, max_size:Optional[int]=None)->Dataset:
-    load_dataset_kwargs = task_info["load_dataset_kwargs"]
+    load_dataset_kwargs = ADDITIONAL_KWARGS.get(load_dataset.__qualname__, {})
+    load_dataset_kwargs.update(task_info["load_dataset_kwargs"])
+
     dataset = load_dataset(**load_dataset_kwargs)
     # subsampling
     if max_size is not None and max_size < len(dataset):
@@ -32,14 +39,17 @@ def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedToken
     logging.info(f"\t tokenized dataset: {str(tokenized_dataset)}")
     return tokenized_dataset
     
-def get_tokenized_datasets(config):
+def get_tokenized_datasets(data_args, model_args):
     """Get tokenized datasets."""
-    data_args = config['data_args']
-    tokenizer_name = config['model_args'].tokenizer_name
-    tokenizer = AutoTokenizer.from_pretrained(
-        config['model_args'].tokenizer_name,
-        use_fast=config['model_args'].use_fast_tokenizer
-    )
+    tokenizer_name = model_args.tokenizer_model_name
+    
+    tokenizer_kwargs = ADDITIONAL_KWARGS.get(AutoTokenizer.from_pretrained.__qualname__)
+    tokenizer_kwargs.update(dict(
+        pretrained_model_name_or_path = model_args.tokenizer_model_name,
+        use_fast=model_args.use_fast_tokenizer
+    ))
+
+    tokenizer = AutoTokenizer.from_pretrained(**tokenizer_kwargs)
 
     train_task_info_list = data_args.data_pipeline["train"]
     eval_task_info_list = data_args.data_pipeline["eval"]

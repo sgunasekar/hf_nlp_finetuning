@@ -1,0 +1,24 @@
+load_dataset:
+  data_dir: null
+  data_files: null
+  cache_dir: null
+  features: null
+  download_config: null
+  download_mode: null
+  ignore_verifications: false
+  keep_in_memory: null
+  save_infos: false
+  revision: null
+  use_auth_token: null
+  task: null
+  streaming: false
+AutoTokenizer.from_pretrained:
+  config: null
+  cache_dir: null
+  force_download: false
+  resume_download: false
+  proxies: null
+  revision: main
+  subfolder: null
+  tokenizer_type: null
+  trust_remote_code: false
