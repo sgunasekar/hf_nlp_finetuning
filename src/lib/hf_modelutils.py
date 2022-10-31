@@ -1,11 +1,13 @@
 
-from transformers import AutoModelForSequenceClassification
-from configs.constants import CUSTOM_FUNC_KWARGS_FILE
-from transformers import AutoTokenizer, PreTrainedTokenizerBase
-from datasets import load_dataset, Dataset
 import logging
 from typing import Optional
-import yaml 
+
+import yaml
+from configs.constants import CUSTOM_FUNC_KWARGS_FILE
+from datasets import Dataset, load_dataset
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          PreTrainedTokenizerBase)
+
 ADDITIONAL_KWARGS = yaml.full_load(open(CUSTOM_FUNC_KWARGS_FILE,"r"))
 
 def get_model(model_args, io_args):

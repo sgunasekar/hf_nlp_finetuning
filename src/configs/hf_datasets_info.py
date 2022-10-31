@@ -1,6 +1,6 @@
 # Automatically generated using ../scripts/build_datasets_info.py. 
 
-from datasets import ClassLabel, Value, Sequence
+from datasets import ClassLabel, Sequence, Value
 
 valid_task_names=['cola', 'sst2', 'mrpc', 'qqp', 'stsb', 'mnli', 'mnli_mismatched', 'mnli_matched', 'qnli', 'rte', 'wnli', 'ax', 'imdb', 'hans']
 

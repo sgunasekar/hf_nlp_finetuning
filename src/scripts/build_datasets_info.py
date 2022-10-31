@@ -1,13 +1,14 @@
 ## Running this script generates the configs/hf_datasets_info.py file
 
 import json
-import os 
-import datasets
+import logging
+import os
 import sys
 from typing import Union
-import logging
-from datasets import ClassLabel, Value
+
+import datasets
 import evaluate
+from datasets import ClassLabel, Value
 
 sys.path.insert(0, "..") 
 

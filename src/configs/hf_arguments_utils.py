@@ -1,13 +1,15 @@
 # Adapted from hugging face examples code https://github.com/huggingface/transformers/blob/main/examples/pytorch/text-classification/run_glue.py
+import logging
+import sys
 from dataclasses import dataclass, field
 from types import NoneType
-from .hf_datasets_info import valid_task_names, datasets_info
 from typing import Optional, Union
-import sys
-import yaml
+
 import datasets.features
+import yaml
 from transformers import HfArgumentParser
-import logging
+
+from .hf_datasets_info import datasets_info, valid_task_names
 
 default_args_factory = {
     'data_args': {
