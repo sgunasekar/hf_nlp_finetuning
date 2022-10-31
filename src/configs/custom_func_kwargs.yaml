@@ -14,11 +14,20 @@ load_dataset:
   streaming: false
 AutoTokenizer.from_pretrained:
   config: null
+  trust_remote_code: false
   cache_dir: null
   force_download: false
   resume_download: false
   proxies: null
-  revision: main
-  subfolder: null
+  revision: null
   tokenizer_type: null
+_BaseAutoModelClass.from_pretrained:
+  config: null
   trust_remote_code: false
+  cache_dir: null
+  force_download: false
+  resume_download: false
+  proxies: null
+  revision: null
+  subfolder: ''
+  tokenizer_type: null

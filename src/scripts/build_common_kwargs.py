@@ -13,15 +13,30 @@ func_list_skip_and_add_args = [
     (
         transformers.AutoTokenizer.from_pretrained,['pretrained_model_name_or_path ','use_fast'],
         {
-            "config": None,
-            "cache_dir": None,
-            "force_download": False,
-            "resume_download": False,
-            "proxies": None,
-            "revision": "main",
-            "subfolder": None,
-            "tokenizer_type": None,
-            "trust_remote_code": False,
+            'config': None,
+            'trust_remote_code': False,
+            'cache_dir': None,
+            'force_download': False,
+            'resume_download': False,
+            'proxies': None,
+            'revision': None,
+            'tokenizer_type': None,
+            'trust_remote_code': False,
+        },
+    ),
+    (
+        transformers.AutoModelForSequenceClassification.from_pretrained,['pretrained_model_name_or_path ','use_fast'],
+        {
+            'config': None,
+            'trust_remote_code': False,
+            'cache_dir': None,
+            'force_download': False,
+            'resume_download': False,
+            'proxies': None,
+            'revision': None,
+            'subfolder': "",
+            'tokenizer_type': None,
+            'trust_remote_code': False,
         },
     ),
 ]
@@ -46,23 +61,9 @@ def main():
 
         additional_kwargs[func.__qualname__] = additional_fn_kwargs
     
-    file_path = os.path.join("..", "configs", "additional_func_kwargs.yaml")
+    file_path = os.path.join("..", "configs", "custom_func_kwargs.yaml")
     with open(file_path, "w") as f:
         yaml.dump(additional_kwargs, f, sort_keys=False)
-
-    # additionally create separate training_args.yaml for specifying custom defaults for transformers.TrainingArguments .__init__
-
-    training_kwargs = {}
-    parameters = inspect.signature(transformers.TrainingArguments .__init__).parameters
-
-    for param, spec in parameters.items():
-        if spec.name=='self':
-            continue
-        training_kwargs[spec.name] = spec.default
-
-    file_path = os.path.join("..", "configs", "custom_training_args.yaml")
-    with open(file_path, "w") as f:
-        yaml.dump(training_kwargs, f, sort_keys=False)
 
 if __name__=="__main__":
     main()

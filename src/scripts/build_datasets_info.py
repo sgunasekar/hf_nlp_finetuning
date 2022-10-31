@@ -74,12 +74,12 @@ def get_task_info_dict(TaskInfo: datasets.DatasetInfo, task_key:str) -> dict:
     if isinstance(label, ClassLabel):
         num_outputs = label.num_classes
         # default metric/loss for classification
-        evaluate_load_args = ("accuracy")
+        evaluate_load_args = ("accuracy",)
         task_type = "classification"
     elif label.dtype.startswith(('float','double')):
         num_outputs = 1
         # default metric/loss for regression
-        evaluate_load_args = ("mse")
+        evaluate_load_args = ("mse",)
         task_type = "regression"
     else:
         num_outputs = None

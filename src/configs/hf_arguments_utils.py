@@ -1,12 +1,13 @@
 # Adapted from hugging face examples code https://github.com/huggingface/transformers/blob/main/examples/pytorch/text-classification/run_glue.py
 from dataclasses import dataclass, field
-import dataclasses
+from types import NoneType
 from .hf_datasets_info import valid_task_names, datasets_info
 from typing import Optional, Union
-import os
 import sys
 import yaml
+import datasets.features
 from transformers import HfArgumentParser
+import logging
 
 default_args_factory = {
     'data_args': {
@@ -20,11 +21,36 @@ default_args_factory = {
         'tokenizer_model_name': lambda : None, # same as model_name
         'cache_dir': lambda : None, # default ~/.cache/huggingface/
         'use_fast_tokenizer': lambda : True, 
+        'model_revision': lambda : 'main',
     },
     'io_args': {
-        'log_dir': lambda : os.environ.get('OUTPUT_DIR', None), # logs to stdout
+        'cache_dir': lambda : None,
+        'use_auth_token': lambda : False,
+        'is_shared_file_system': lambda : False,
     }
 }
+
+@dataclass
+class IOArguments:
+    """
+    Arguments pertaining to IO. The following arguments overwrite the options to TrainingArgs
+    """
+    
+    cache_dir: Union[str,NoneType] = field( 
+        default_factory=default_args_factory['io_args']['cache_dir'],
+        metadata={"help": f"Directory to cache files in. Defaults to ~/.cache/huggingface/datasets or ~/.cache/huggingface/transformers"}
+    )
+
+    use_auth_token: Union[str,NoneType] = field( 
+        default_factory=default_args_factory['io_args']['use_auth_token'],
+        metadata={"help": "Will use the token generated when running `huggingface-cli login` (necessary to use this script with private models)."}
+    )
+
+    is_shared_file_system: bool = field(
+        default_factory=default_args_factory['io_args']['is_shared_file_system'],
+        metadata={"help": "Used only in multi-node distributed training: flag to specify if the different nodes have shared file system. Used for e.g., in caching tokernizers where default behavior is to tokenize once on each node; but setting this to True would invoke tokenizer only on node-0."}
+    )
+
 
 @dataclass
 class DatasetArguments:
@@ -60,18 +86,35 @@ class DatasetArguments:
     )
 
     def _get_task_info(self,s):
-        '''Checks if a dataset argument (passed as train_datasets or eval_datasets) is valid. If valid, returns appropriately proceessed task_info for the dataset'''
+        """
+        Checks if a dataset argument (passed as train_datasets or eval_datasets) is valid. If valid, returns appropriately proceessed task_info for the dataset
+        """
         dataset_key, split = s.split('.')
         
         assert dataset_key in valid_task_names, f"{dataset_key} is not a valid task name. Please specify the datasets in the format `<task_name>.<split>', where task_names in {valid_task_names}."
+
         assert split in datasets_info[dataset_key]['splits'], f"{split} is not a valid split for dataset {dataset_key}. Valid splits for {dataset_key} are {datasets_info[dataset_key]['splits']}"
 
         task_info = datasets_info[dataset_key]
         task_info['load_dataset_kwargs']['split'] = split
         return task_info
 
-    def __post_init__(self):
+    def _check_train_datasets_compatibility(self,train_task_info_list):
+        """
+        Checks if the datasets passed as train_datasets are compatible to be merged. 
+        """
+        features_list = [task_info['features'] for task_info in train_task_info_list]
+        try:
+            datasets.features.features._check_if_features_can_be_aligned(features_list)
+        except Exception as e:
+            logging.error(f"The features of the train datasets {self.train_datasets} are not aligned.")
+            raise e
 
+    def __post_init__(self):
+        
+        """
+        Creates dataset pipeline
+        """
         if isinstance(self.train_datasets, str):
             self.train_datasets = [self.train_datasets]
         if isinstance(self.eval_datasets, str):
@@ -82,6 +125,7 @@ class DatasetArguments:
         for ds in self.train_datasets:
             task_info = self._get_task_info(ds)
             self.data_pipeline['train'].append(task_info)
+        self._check_train_datasets_compatibility(self.data_pipeline['train'])
 
         for ds in self.eval_datasets:
             task_info = self._get_task_info(ds)
@@ -98,16 +142,26 @@ class ModelArguments:
     )
     model_path: Optional[str] = field(
         default_factory=default_args_factory['model_args']['model_path'],
-        metadata={"help": "A path to a directory containing model weights saved using save_pretrained(). "}
+        metadata={"help": "A path to a directory containing model weights saved using save_pretrained(). If unspecified, model_name is used as the *model id* to load from huggingface.co/models."}
     )
-    tokenizer_model_name: Optional[str] = field(
+    tokenizer_model_path: Optional[str] = field(
         default_factory=default_args_factory['model_args']['tokenizer_model_name'],
-        metadata={"help": "The *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co. If differnet from model_name"}
+        metadata={"help": "The *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co. If differnet from model_path (which defatults to model_name)"}
     )
     use_fast_tokenizer: bool = field(
         default_factory=default_args_factory['model_args']['use_fast_tokenizer'],
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
     )
+    model_revision: str = field(
+        default_factory=default_args_factory['model_args']['model_revision'],
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
+
+    def __post_init__(self):
+        if not self.model_path:
+            self.model_path = self.model_name
+        if not self.tokenizer_model_path:
+            self.tokenizer_model_path = self.model_path
 
 class Custom_HfArgumentParser(HfArgumentParser):
     def parse_yaml_first_then_args_into_dataclasses(
@@ -135,8 +189,6 @@ class Custom_HfArgumentParser(HfArgumentParser):
             args = sys.argv[1:]
         if yaml_filename is not None:
             args_dict = yaml.full_load(open(yaml_filename,"r"))
-            print(args_dict)
         yaml_dict_str = [f'--{k}={v}' for (k,v) in args_dict.items() if v is not None]
-        print(yaml_dict_str)
         args = args + yaml_dict_str
         return self.parse_args_into_dataclasses(args=args)
