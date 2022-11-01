@@ -36,7 +36,8 @@ def main():
     utils.setup_logging(training_args)
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}, hostname: {socket.gethostname()}; "
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}."
+        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}; "
+        + f"initial gpu utilization: {utils.print_gpu_utilization()}."
     )
     logger.info("=========== args ============")
     logger.info(f"data args: {data_args}\n")
@@ -48,6 +49,8 @@ def main():
     # Set seed before initializing model.
     if training_args.seed>0: 
         transformers.set_seed(training_args.seed)
+    else:
+        training_args.seed = random.randint(0,2**32-1)
 
     # load datasets
     # creates tokenized dataset on only the rank=0 process; the other process read from cache. In multi-node training local=True runs the tokenizer on rank=0 process of each node, else only node=0 & rank=0 process. 
@@ -75,7 +78,7 @@ def main():
 
     # Get resume_checkpoint if applicable, or last_chekpoint, or None
     checkpoint = utils.get_checkpoint(training_args)
-
+    logger.info(f"Gpu utilization after setup: {utils.print_gpu_utilization()}")
     logger.info("===========train=============")
     # Training
     if training_args.do_train:
@@ -89,22 +92,25 @@ def main():
         trainer.save_state()
 
     logger.info("===========DONE TRAINING===========")
+    logger.info(f"Gpu utilization after training: {utils.print_gpu_utilization()}")
     logger.info("============final eval=============")
     # Evaluation
     if training_args.do_eval:
-        logger.info("*** Evaluate ***")
-        metrics = trainer.evaluate(eval_dataset=tokenized_eval_datasets)
-        metrics["eval_samples"] = {k:len(v) for k,v in tokenized_eval_datasets.items()}
-
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
+        for eval_dataset_name, eval_dataset in tokenized_eval_datasets.items():
+            metrics = trainer.evaluate(
+                        eval_dataset=eval_dataset,
+                        metric_key_prefix=f"eval_{eval_dataset_name}",
+                    )
+            metrics[f"eval_{eval_dataset_name}_samples"] = len(eval_dataset)
+            trainer.log_metrics("eval", metrics)
+            trainer.save_metrics("eval", metrics)
 
     logger.info("============DONE=============")
 
     # Pushing to hub
     kwargs = {'finetuned_from': model_args.model_name, 'tasks': "text-classification"}
-    kwargs['dataset_tags'] = data_args.train_datasets[0].load_dataset_kwargs['builder_name']
-    kwargs['dataset_args'] = data_args.train_datasets[0].load_dataset_kwargs['builder_name']
+    kwargs['dataset_tags'] = data_args.data_pipeline['train'][0]['load_dataset_kwargs']['path']
+    kwargs['dataset_args'] =  data_args.data_pipeline['train'][0]['load_dataset_kwargs']['name']
     kwargs["dataset"] = f"{kwargs['dataset_tags']}:{kwargs['dataset_args']}"
 
     if training_args.push_to_hub:

@@ -35,8 +35,6 @@ func_list_skip_and_add_args = [
             'resume_download': False,
             'proxies': None,
             'revision': None,
-            'subfolder': "",
-            'tokenizer_type': None,
             'trust_remote_code': False,
         },
     ),

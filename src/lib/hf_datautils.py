@@ -97,5 +97,6 @@ def get_tokenized_datasets(data_args, model_args, io_args):
         if len(result) > 1:
             result['combined_score'] = np.mean(list(result.values())).item()
         return result
-        
+
+    model_args.num_labels = train_task_info_list[0]['num_outputs']
     return tokenized_train_dataset, tokenized_eval_datasets, tokenizer, compute_metrics

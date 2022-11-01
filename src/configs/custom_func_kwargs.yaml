@@ -29,5 +29,3 @@ _BaseAutoModelClass.from_pretrained:
   resume_download: false
   proxies: null
   revision: null
-  subfolder: ''
-  tokenizer_type: null

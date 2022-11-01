@@ -70,7 +70,7 @@ fsdp_min_num_params: 0
 fsdp_transformer_layer_cls_to_wrap: null
 deepspeed: null
 label_smoothing_factor: 0.0
-optim: adamw_hf
+optim: adamw_torch
 adafactor: false
 group_by_length: false
 length_column_name: length

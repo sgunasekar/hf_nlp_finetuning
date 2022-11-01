@@ -14,10 +14,13 @@ def get_model(model_args, io_args):
     model_kwargs = ADDITIONAL_KWARGS.get(AutoModelForSequenceClassification.from_pretrained.__qualname__)
 
     model_kwargs.update(dict(
-        pretrained_model_name_or_path = model_args.model_path,
+        pretrained_model_name_or_path=model_args.model_path,
+        num_labels=model_args.num_labels,
         revision=model_args.model_revision,
         use_auth_token=True if io_args.use_auth_token else None,
         cache_dir=io_args.cache_dir,
     ))
 
-    model = AutoModelForSequenceClassification(**model_kwargs)
+    model = AutoModelForSequenceClassification.from_pretrained(**model_kwargs)
+
+    return model

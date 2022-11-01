@@ -154,7 +154,7 @@ class ModelArguments:
         default_factory=default_args_factory['model_args']['use_fast_tokenizer'],
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
     )
-    model_revision: str = field(
+    model_revision: str =  field(
         default_factory=default_args_factory['model_args']['model_revision'],
         metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
     )
@@ -192,5 +192,5 @@ class Custom_HfArgumentParser(HfArgumentParser):
         if yaml_filename is not None:
             args_dict = yaml.full_load(open(yaml_filename,"r"))
         yaml_dict_str = [f'--{k}={v}' for (k,v) in args_dict.items() if v is not None]
-        args = args + yaml_dict_str
+        args = yaml_dict_str + args
         return self.parse_args_into_dataclasses(args=args)
