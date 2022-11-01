@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 import datasets
 import transformers
 
@@ -15,8 +15,8 @@ def setup_logging(training_args):
     import socket
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
-    logging.getLogger().setLevel(logging.INFO)
-    logger.handlers = []
+    logging.getLogger().setLevel(logging.INFO) #logging.getLogger() returns root logger
+    _logger.handlers = []
 
     # Setup logging
     logging.basicConfig(
@@ -25,7 +25,7 @@ def setup_logging(training_args):
         handlers=[logging.StreamHandler(sys.stdout)],
     )
 
-    logger.setLevel(log_level)
+    _logger.setLevel(log_level)
 
     print(f'Running on machine {socket.gethostname()}')
 
@@ -44,7 +44,7 @@ def get_checkpoint(training_args):
                 f"Output directory ({training_args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome."
             )
         elif last_checkpoint is not None and training_args.resume_from_checkpoint is None:
-            logger.warning(
+            _logger.warning(
                 f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
 

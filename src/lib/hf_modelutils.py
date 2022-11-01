@@ -8,6 +8,7 @@ from datasets import Dataset, load_dataset
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           PreTrainedTokenizerBase)
 
+_logger = logging.getLogger(__name__)
 ADDITIONAL_KWARGS = yaml.full_load(open(CUSTOM_FUNC_KWARGS_FILE,"r"))
 
 def get_model(model_args, io_args):

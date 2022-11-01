@@ -10,6 +10,7 @@ import datasets
 import evaluate
 from datasets import ClassLabel, Value
 
+_logger = logging.getLogger(__name__)
 sys.path.insert(0, "..") 
 
 ## This scripts creates and updates the ../configs/hf_datasets_info.py file
@@ -135,11 +136,11 @@ def dump_datasets_info(datasets_info, overwrite = True):
 
     file_path = os.path.join("..", "configs", "hf_datasets_info.py") 
     if overwrite or not(os.path.exists(file_path)):
-        logging.info(f"Creating/overwriting {file_path}")
+        _logger.info(f"Creating/overwriting {file_path}")
     else: 
         from configs.hf_datasets_info import datasets_info as old_datasets_info
         datasets_info = {**old_datasets_info, **datasets_info}
-        logging.info(f"Updating datasets_info in existing {file_path}")
+        _logger.info(f"Updating datasets_info in existing {file_path}")
 
     with open(file_path, 'w') as finfo:
         finfo.write('# Automatically generated using ../scripts/build_datasets_info.py. \n\n')

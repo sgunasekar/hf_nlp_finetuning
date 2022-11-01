@@ -8,6 +8,7 @@ from configs.constants import CUSTOM_FUNC_KWARGS_FILE
 from datasets import Dataset, concatenate_datasets, load_dataset
 from transformers import AutoTokenizer, EvalPrediction, PreTrainedTokenizerBase
 
+_logger = logging.getLogger(__name__)
 ADDITIONAL_KWARGS = yaml.full_load(open(CUSTOM_FUNC_KWARGS_FILE,"r"))
 
 def get_dataset(task_info: dict, max_size:Optional[int]=None, io_args:Optional[dict]=None)->Dataset:
@@ -23,7 +24,7 @@ def get_dataset(task_info: dict, max_size:Optional[int]=None, io_args:Optional[d
     # subsampling
     if max_size is not None and max_size < len(dataset):
         dataset = dataset.shuffle().select(range(max_size))
-    logging.info(f"Loaded dataset: {str(dataset)}")
+    _logger.info(f"Loaded dataset: {str(dataset)}")
     return dataset
 
 def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedTokenizerBase)->Dataset:
@@ -36,7 +37,7 @@ def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedToken
         # FIXME: handle complicated label2id's -- not an issue for glue 
         return tokenizer(*args, padding=False, truncation=True)
 
-    logging.info(f"Tokenizing dataset: {str(dataset)}")
+    _logger.info(f"Tokenizing dataset: {str(dataset)}")
     # TODO: add support for overwrite cache
     tokenized_dataset = dataset.map(tokenize_function, batched=True)
     if task_info['label_key'] is not None and task_info['label_key']!='lables':
@@ -47,7 +48,7 @@ def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedToken
     tokenized_dataset.set_format(
         "torch", columns=['input_ids', 'attention_mask', 'labels', 'idx'])
     
-    logging.info(f"\t tokenized dataset: {str(tokenized_dataset)}")
+    _logger.info(f"\t tokenized dataset: {str(tokenized_dataset)}")
     return tokenized_dataset
     
 def get_tokenized_datasets(data_args, model_args, io_args):

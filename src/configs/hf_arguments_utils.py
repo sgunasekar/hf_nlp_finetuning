@@ -11,6 +11,8 @@ from transformers import HfArgumentParser
 
 from .hf_datasets_info import datasets_info, valid_task_names
 
+_logger = logging.getLogger(__name__)
+
 default_args_factory = {
     'data_args': {
         'train_datasets': lambda : ['mnli.train'],
@@ -109,7 +111,7 @@ class DatasetArguments:
         try:
             datasets.features.features._check_if_features_can_be_aligned(features_list)
         except Exception as e:
-            logging.error(f"The features of the train datasets {self.train_datasets} are not aligned.")
+            _logger.error(f"The features of the train datasets {self.train_datasets} are not aligned.")
             raise e
 
     def __post_init__(self):
