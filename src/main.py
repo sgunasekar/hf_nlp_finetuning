@@ -108,15 +108,12 @@ def main():
     logger.info("============DONE=============")
 
     # Pushing to hub
-    kwargs = {'finetuned_from': model_args.model_name, 'tasks': "text-classification"}
-    kwargs['dataset_tags'] = data_args.data_pipeline['train'][0]['load_dataset_kwargs']['path']
-    kwargs['dataset_args'] =  data_args.data_pipeline['train'][0]['load_dataset_kwargs']['name']
-    kwargs["dataset"] = f"{kwargs['dataset_tags']}:{kwargs['dataset_args']}"
-
     if training_args.push_to_hub:
+        kwargs = {'finetuned_from': model_args.model_name, 'tasks': "text-classification"}
+        kwargs['dataset_tags'] = data_args.data_pipeline['train'][0]['load_dataset_kwargs']['path']
+        kwargs['dataset_args'] =  data_args.data_pipeline['train'][0]['load_dataset_kwargs']['name']
+        kwargs["dataset"] = f"{kwargs['dataset_tags']}:{kwargs['dataset_args']}"
         trainer.push_to_hub(**kwargs)
-    else:
-        trainer.create_model_card(**kwargs)
 
 if __name__=='__main__':
     main()
