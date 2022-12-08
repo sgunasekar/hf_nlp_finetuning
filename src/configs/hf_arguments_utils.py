@@ -1,7 +1,7 @@
 # Adapted from hugging face examples code https://github.com/huggingface/transformers/blob/main/examples/pytorch/text-classification/run_glue.py
 import logging
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from types import NoneType
 from typing import Optional, Union
 
@@ -16,7 +16,8 @@ _logger = logging.getLogger(__name__)
 default_args_factory = {
     'data_args': {
         'train_datasets': lambda : ['mnli.train'],
-        'eval_datasets': lambda : ['mnli.validation_matched', 'mnli.validation_mismatched', 'ax.test', 'hans.validation'],
+        'eval_datasets': lambda : ['mnli.validation_matched', 'mnli.validation_mismatched'],
+        'test_datasets': lambda : ['mnli.test_matched', 'mnli.test_mismatched', 'ax.test'],
         'max_train_samples': lambda : None, # No max sample size
         'max_eval_samples': lambda : None, # No Max sample size
     },
@@ -74,6 +75,11 @@ class DatasetArguments:
         metadata={"help": f"String or a list of strings of dataset names for validation specified in the format `<task_name>.<split>'. Valid task names are {valid_task_names}. See lib.hf_datasets_info.datasets_info for the valid splits for each task name. "}
     )
 
+    test_datasets: Optional[list[str]] = field(
+        default_factory=default_args_factory['data_args']['test_datasets'],
+        metadata={"help": f"String or a list of strings of dataset names for test prediction only (no metrics are calculated). Specify in the format `<task_name>.<split>'. Valid task names are {valid_task_names}. See lib.hf_datasets_info.datasets_info for the valid splits for each task name. "}
+    )
+
     max_train_samples: Optional[int] = field(
         default_factory=default_args_factory['data_args']['max_train_samples'],
         metadata={"help": "For debugging purposes or quicker training, truncate the number of training examples in each training dataset to this value if set."}
@@ -83,7 +89,7 @@ class DatasetArguments:
         metadata={"help": "For debugging purposes or quicker evaluation, truncate the number of evaluation examples in each eval dataset to this value if set."},
     )
 
-    data_pipeline: dict = field(
+    _data_pipeline: dict = field(
         init=False,
         default_factory=dict,
         metadata={"help": "Will be automatically generated after processing command line arguments."},
@@ -114,6 +120,20 @@ class DatasetArguments:
             _logger.error(f"The features of the train datasets {self.train_datasets} are not aligned.")
             raise e
 
+    def __str__(self):
+        self_as_dict = asdict(self)
+
+        # Remove local arguments
+        self_keys = list(self_as_dict.keys())
+        for key in self_keys:
+            if key.startswith("_"):
+                del self_as_dict[key]
+
+        attrs_as_str = [f"{k}={v}," for k, v in sorted(self_as_dict.items())]
+        return f"{self.__class__.__name__}({' '.join(attrs_as_str)})"
+
+    __repr__ = __str__
+
     def __post_init__(self):
         
         """
@@ -123,17 +143,24 @@ class DatasetArguments:
             self.train_datasets = [self.train_datasets]
         if isinstance(self.eval_datasets, str):
             self.eval_datasets = [self.eval_datasets]
+        if isinstance(self.test_datasets, str):
+            self.test_datasets = [self.test_datasets]
 
-        self.data_pipeline = {'train':[], 'eval':[]}
+        self._data_pipeline = {'train':[], 'eval':[], 'test':[]}
 
-        for ds in self.train_datasets:
-            task_info = self._get_task_info(ds)
-            self.data_pipeline['train'].append(task_info)
-        self._check_train_datasets_compatibility(self.data_pipeline['train'])
+        self._data_pipeline['train'] = [
+            self._get_task_info(ds) for ds in self.train_datasets
+        ]
 
-        for ds in self.eval_datasets:
-            task_info = self._get_task_info(ds)
-            self.data_pipeline['eval'].append(task_info)
+        self._check_train_datasets_compatibility(self._data_pipeline['train'])
+
+        self._data_pipeline['eval'] = [
+            self._get_task_info(ds) for ds in self.eval_datasets
+        ]
+
+        self._data_pipeline['test'] = [
+            self._get_task_info(ds) for ds in self.test_datsets
+        ]
 
 @dataclass
 class ModelArguments:

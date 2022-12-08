@@ -26,7 +26,8 @@ custom_training_args_defaults = dict(
     save_steps=200,
     eval_steps=200,
     seed=-1,
-    disable_tqdm=True
+    disable_tqdm=True,
+    optim='adamw_torch',
 )
 
 def main():

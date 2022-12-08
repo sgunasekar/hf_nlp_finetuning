@@ -24,7 +24,7 @@ def get_dataset(task_info: dict, max_size:Optional[int]=None, io_args:Optional[d
     # subsampling
     if max_size is not None and max_size < len(dataset):
         dataset = dataset.shuffle().select(range(max_size))
-    _logger.info(f"Loaded dataset: {str(dataset)}")
+
     return dataset
 
 def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedTokenizerBase)->Dataset:
@@ -37,7 +37,6 @@ def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedToken
         # FIXME: handle complicated label2id's -- not an issue for glue 
         return tokenizer(*args, padding=False, truncation=True)
 
-    _logger.info(f"Tokenizing dataset: {str(dataset)}")
     # TODO: add support for overwrite cache
     tokenized_dataset = dataset.map(tokenize_function, batched=True)
     if task_info['label_key'] is not None and task_info['label_key']!='lables':
@@ -48,24 +47,34 @@ def tokenize_dataset(dataset:Dataset, task_info: dict, tokenizer:PreTrainedToken
     tokenized_dataset.set_format(
         "torch", columns=['input_ids', 'attention_mask', 'labels', 'idx'])
     
-    _logger.info(f"\t tokenized dataset: {str(tokenized_dataset)}")
     return tokenized_dataset
     
 def get_tokenized_datasets(data_args, model_args, io_args):
     """Get tokenized datasets."""
 
-    train_task_info_list = data_args.data_pipeline['train']
+    train_task_info_list = data_args._data_pipeline['train']
     eval_task_list = data_args.eval_datasets
-    eval_task_info_list = data_args.data_pipeline['eval']
+    eval_task_info_list = data_args._data_pipeline['eval']
+    test_task_list = data_args.test_datasets
+    test_task_info_list = data_args._data_pipeline['test']
 
-    # Get raw datasets: train datasets will be concatenated as one dataset so they are processed as list while eval datasets are processed as dict
+    # Get raw datasets: train datasets will be concatenated as one dataset so they are processed as list, while eval & test datasets are processed as dict
     train_datasets = [
         get_dataset(task_info, data_args.max_train_samples, io_args=io_args) for task_info in train_task_info_list
     ]
+    _logger.info(f"Loaded {len(train_datasets)} train datasets: {train_datasets}")
     eval_datasets = {
-        task_name: get_dataset(task_info, data_args.max_eval_samples, io_args=io_args) for task_name, task_info in zip(eval_task_list,eval_task_info_list)
+        task_name: get_dataset(task_info, data_args.max_eval_samples, io_args=io_args) for task_name, task_info in zip(eval_task_list, eval_task_info_list)
     }
+    _logger.info(f"Loaded {len(eval_datasets)} eval datasets: {eval_datasets}")
+
+    test_datasets = {
+        task_name: get_dataset(task_info, io_args=io_args) for task_name, task_info in zip(test_task_list, test_task_info_list)
+    }
+    _logger.info(f"Loaded {len(test_datasets)} test datasets: {test_datasets}")
+    
     # Tokenize datasets
+    _logger.info("\n===========tokenizing===========")
     tokenizer_kwargs = ADDITIONAL_KWARGS.get(AutoTokenizer.from_pretrained.__qualname__)
     tokenizer_kwargs.update(dict(
         pretrained_model_name_or_path = model_args.tokenizer_model_path,
@@ -76,13 +85,23 @@ def get_tokenized_datasets(data_args, model_args, io_args):
     ))
 
     tokenizer = AutoTokenizer.from_pretrained(**tokenizer_kwargs)
-    tokenized_train_datasets = [
-        tokenize_dataset(dset, task_info, tokenizer) for dset, task_info in zip(train_datasets, train_task_info_list)
-    ]
+    _logger.info(f"Tokenizing {len(train_datasets)} train datasets")
+    tokenized_train_datasets = []
+    for dset, task_info in zip(train_datasets, train_task_info_list):
+        tokenized_train_datasets.append(
+            tokenize_dataset(dset, task_info, tokenizer)
+        )
+        _logger.info(f"\t tokenized dataset: {str(tokenized_dataset)}")
     tokenized_train_dataset = concatenate_datasets(tokenized_train_datasets)
 
+    _logger.info(f"Tokenizing {len(eval_datasets)} eval datasets")
     tokenized_eval_datasets = {
         task_name: tokenize_dataset(eval_datasets[task_name], task_info, tokenizer) for task_name, task_info in zip(eval_task_list,eval_task_info_list)
+    }
+
+    _logger.info(f"Tokenizing {len(test_datasets)} test datasets")
+    tokenized_test_datasets = {
+        task_name: tokenize_dataset(test_datasets[task_name], task_info, tokenizer) for task_name, task_info in zip(test_task_list,test_task_info_list)
     }
 
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
@@ -100,4 +119,4 @@ def get_tokenized_datasets(data_args, model_args, io_args):
         return result
 
     model_args.num_labels = train_task_info_list[0]['num_outputs']
-    return tokenized_train_dataset, tokenized_eval_datasets, tokenizer, compute_metrics
+    return tokenized_train_dataset, tokenized_eval_datasets, tokenized_test_datasets, tokenizer, compute_metrics

@@ -2,7 +2,7 @@ output_dir: save
 overwrite_output_dir: true
 do_train: true
 do_eval: true
-do_predict: false
+do_predict: true
 evaluation_strategy: steps
 prediction_loss_only: false
 per_device_train_batch_size: 32
@@ -36,6 +36,7 @@ save_steps: 200
 save_total_limit: 5
 save_on_each_node: false
 no_cuda: false
+use_mps_device: false
 seed: -1
 data_seed: null
 jit_mode_eval: false
@@ -97,3 +98,4 @@ auto_find_batch_size: false
 full_determinism: false
 torchdynamo: null
 ray_scope: last
+ddp_timeout: 1800
