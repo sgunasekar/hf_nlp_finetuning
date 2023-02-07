@@ -39,14 +39,6 @@ def setup_logging(training_args):
     transformers.utils.logging.enable_propagation()
     transformers.utils.logging.enable_explicit_format()
 
-    hf_loggers = [
-        transformers.utils.logging.get_logger(),
-        datasets.utils.logging.get_logger(),
-    ]
-
-    # for logger in hf_loggers:
-    #     logger.set_verbosity(log_level)
-    #     logger.add_handlers(logging.root.handlers)
 
 def get_checkpoint(training_args):
     
